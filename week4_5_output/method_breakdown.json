@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-02-05T01:11:11.319871+00:00",
+  "model_meta": {
+    "model": "isolation_forest",
+    "n_estimators": 300,
+    "random_state": 42
+  },
+  "weights": {
+    "risk": 0.7,
+    "model": 0.3
+  },
+  "thresholds": {
+    "high": 0.5961324766782531,
+    "medium": 0.47078297055057616
+  },
+  "counts": {
+    "low": 21430,
+    "medium": 328,
+    "high": 110
+  },
+  "flag_counts": {
+    "flag_impossible_travel": 572,
+    "flag_concurrent": 466,
+    "flag_device_diversity": 130,
+    "flag_post_success": 563,
+    "flag_reset_shift": 68
+  }
+}
