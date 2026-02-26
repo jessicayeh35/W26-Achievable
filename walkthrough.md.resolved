@@ -1,0 +1,200 @@
+# Account Sharing Detection - Implementation Walkthrough
+
+## Summary
+
+Successfully implemented a complete account sharing detection system for a FINRA SIE exam prep platform. The system analyzes ~2M events across 6 datasets to identify potential account sharing through five detection methods.
+
+---
+
+## Final Results
+
+### Detection Summary
+
+| Detection Method | Users Flagged |
+|-----------------|---------------|
+| **Geographic Impossibility** | **572** ✓ (was 0 before fix!) |
+| Concurrent Activity | 466 |
+| Device Diversity | 130 |
+| Post-Success Activity | 563 |
+| Password Reset Shift | 68 |
+
+### Risk Tier Distribution
+
+| Risk Level | Count | % of Total |
+|------------|-------|------------|
+| **High Risk** | 110 | 0.50% |
+| **Medium Risk** | 328 | 1.50% |
+| Low Risk | 21,430 | 98.00% |
+
+### IP Geolocation Stats
+
+- **Total unique public IPs:** 90,443
+- **Successfully geolocated:** 85,443
+- **Success rate:** 94.5%
+- **Processing time:** 60.9 minutes
+
+---
+
+## What Was Built
+
+### Phase 1: IP Geolocation System
+
+**File:** [geolite2_lookup.py](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/geolite2_lookup.py)
+
+Created a batch IP geolocation system that:
+- Uses ip-api.com batch endpoint (100 IPs/request, 15 requests/min)
+- Processes all unique IPs from auth_events and content_activity
+- Caches results to [ip_geo_cache.csv](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/ip_geo_cache.csv) for reuse
+- Supports MaxMind GeoLite2 database as alternative
+
+### Phase 2: Feature Engineering Updates
+
+**File:** [week2_3_features.py](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week2_3_features.py)
+
+Modified to:
+- Add [cache](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/geolite2_lookup.py#224-238) option for `--geo-source` to use pre-computed data
+- Enable geographic features by default when cache exists
+- Support the new cache format with success flag
+
+### Phase 3: Week 6 Final Report Generator
+
+**File:** [week6_final_report.py](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week6_final_report.py)
+
+Generates comprehensive technical report with:
+- Executive summary
+- EDA findings with data quality notes
+- Feature engineering documentation
+- Model performance metrics
+- Flagged user analysis with co-occurrence breakdown
+- Recommendations and policy interventions
+
+### Phase 4: Documentation
+
+**Files:**
+- [README.md](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/README.md) - Complete project documentation
+- [requirements.txt](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/requirements.txt) - Python dependencies
+
+---
+
+## Output Files Generated
+
+### Week 6 Final Deliverables
+
+````carousel
+![Risk Distribution](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week6_output/risk_tier_distribution.png)
+<!-- slide -->
+![Score Distribution](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week6_output/score_distribution.png)
+<!-- slide -->
+![Flag Correlation](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week6_output/flag_correlation.png)
+````
+
+| File | Description |
+|------|-------------|
+| [technical_report.md](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week6_output/technical_report.md) | Complete 10-15 page technical report |
+| [high_risk_users.csv](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week6_output/high_risk_users.csv) | 110 high-risk users for manual review |
+| [medium_risk_users.csv](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week6_output/medium_risk_users.csv) | 328 medium-risk users for monitoring |
+
+### All Output Directories
+
+```
+week1_output/         # EDA findings
+├── week1_report.md
+└── week1_summary.json
+
+week2_3_output/       # Feature engineering
+├── features_per_user.csv
+├── flagged_users.csv
+└── week2_3_report.md
+
+week4_5_output/       # Modeling results
+├── scored_users.csv
+├── manual_review_sample.csv
+├── method_breakdown.json
+└── week4_5_report.md
+
+week6_output/         # Final deliverables
+├── technical_report.md
+├── high_risk_users.csv
+├── medium_risk_users.csv
+└── *.png (visualizations)
+```
+
+---
+
+## Top Flagged Users
+
+The highest-risk users identified (users with multiple flags):
+
+| User ID | Score | Flags |
+|---------|-------|-------|
+| `f56ac25c-dd37-4ecf-bd30-0926d7230fa5` | 4.70 | impossible_travel, concurrent, device_diversity, post_success |
+| `9f09f93f-b294-4a26-8adb-138c7d815684` | 4.30 | impossible_travel, device_diversity, post_success, reset_shift |
+| `c2f8c50f-da58-4e60-bb11-a092abc636f1` | 4.30 | impossible_travel, device_diversity, post_success, reset_shift |
+| `59fab9ac-a52d-4e93-bc44-981c57a83623` | 3.70 | impossible_travel, concurrent, post_success |
+| `786ca853-3cfb-4e29-a11c-19c0cf2097e0` | 3.50 | impossible_travel, device_diversity, post_success |
+
+---
+
+## How to Run
+
+### Full Pipeline
+
+```bash
+# 1. EDA (Week 1)
+python week1_eda.py
+
+# 2. IP Geolocation (~60 min)
+python geolite2_lookup.py --use-batch-api
+
+# 3. Feature Engineering (Weeks 2-3)
+python week2_3_features.py
+
+# 4. Modeling (Weeks 4-5)
+python week4_5_modeling.py
+
+# 5. Final Report (Week 6)
+python week6_final_report.py --generate-plots
+```
+
+### Quick Re-run (uses cached data)
+
+```bash
+python week2_3_features.py && python week4_5_modeling.py && python week6_final_report.py --generate-plots
+```
+
+---
+
+## Critical Fix Applied
+
+### Before: Geographic Detection Disabled
+
+```
+flag_impossible_travel: 0
+```
+
+The original code used `--geo-source none` by default, completely disabling the most reliable detection method.
+
+### After: Geographic Detection Enabled
+
+```
+flag_impossible_travel: 572
+```
+
+Fixed by:
+1. Creating [geolite2_lookup.py](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/geolite2_lookup.py) for batch IP geolocation
+2. Processing all 90,443 unique IPs (94.5% success rate)  
+3. Updating [week2_3_features.py](file:///Users/danielmastick/Documents/GitHub/W26-Achievable/week2_3_features.py) to use cache by default
+4. Re-running the full pipeline
+
+---
+
+## Validation Performed
+
+✅ EDA report generates correctly  
+✅ IP geolocation batch API works (90K IPs processed)  
+✅ Geographic impossibility detection working (572 flags)  
+✅ Feature engineering completes without errors  
+✅ Modeling produces valid risk scores  
+✅ Final report generates with all sections  
+✅ Visualizations created successfully  
+✅ Full pipeline runs end-to-end  
